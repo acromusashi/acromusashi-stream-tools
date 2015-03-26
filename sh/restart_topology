@@ -1,0 +1,117 @@
+#!/bin/bash
+#--------------------------------------------------------------------------
+# Abstract：
+#   Restart targeted topology.
+#   Procedure flow is following.
+#   1) Stop target topology.
+#   2) Wait for target topology stopping.
+#   3) Start stopped topology with config.
+#
+# Setup:
+#   Put this script to /opt/storm/bin directory and add execution authority.
+#
+# Usage：
+#   restart_topology <DeployTopology's Jar Path> <Topology Class> <Config Path>
+#--------------------------------------------------------------------------
+
+#-----------
+# Initialize Variable
+#-----------
+USAGE_MESSAGE='restart_topology <Topology Jar Path> <Topology Class> <Config Path>'
+MAX_LOOP=30
+
+SCRIPT_PATH=`readlink -f $0`
+SCRIPT_BINDIR=`dirname ${SCRIPT_PATH}`
+SCRIPT_BASE=`dirname ${SCRIPT_BINDIR}`
+SCRIPT_LIBPATH=${SCRIPT_BASE}/lib
+
+STORM_BASE="/opt/storm"
+
+# ClassPath
+export SCRIPT_CLASSPATH=\
+${SCRIPT_BASE}/*:\
+${SCRIPT_BASE}/conf:\
+${SCRIPT_LIBPATH}/*\
+
+#-----------
+# Function define
+#-----------
+#+ ----------------------------------------------------
+#+  Arg num check
+#+ ----------------------------------------------------
+function checkArgNum {
+  if [ $# -ne 3 ]
+  then
+    echo -e "${USAGE_MESSAGE}"
+    exit 1
+  fi
+}
+
+#-----------
+# Main 
+#-----------
+checkArgNum $@
+
+JAR_PATH=$1
+TOPOLOGY_CLASS=$2
+CONFIG_PATH=$3
+TOPOLOGY_NAME=`echo ${TOPOLOGY_CLASS} | awk -F . '{ print $NF }'`
+
+# Target topology exist check 
+EXIST_CHECK_RESULT=`${STORM_BASE}/bin/storm list | awk '/^Topology_name/,0' | grep "${TOPOLOGY_NAME} "`
+
+if [ "${EXIST_CHECK_RESULT}" = "" ] ; then
+  echo "Topology ${TOPOLOGY_NAME} not alived."
+  exit 1
+fi
+
+# deactivate topology
+${STORM_BASE}/bin/storm deactivate ${TOPOLOGY_NAME}
+DEACIVATE_RESULT=$?
+
+if [ ${DEACIVATE_RESULT} -ne 0 ] ;  then
+  echo "Topology ${TOPOLOGY_NAME} deactivate failed."
+  exit 1
+fi
+
+echo "${TOPOLOGY_NAME} deactivated. Wait Stop."
+
+# WaitStop
+java -classpath ${SCRIPT_CLASSPATH} acromusashi.stream.tools.TopologyExecutionWaitTool -t ${TOPOLOGY_NAME}
+STOP_RESULT=$?
+
+if [ ${STOP_RESULT} -eq 2 ] ;  then
+  echo "Topology stop wait failed."
+  exit 1
+fi
+
+if [ ${STOP_RESULT} -eq 1 ] ;  then
+  echo "Topology stop wait timeout. Activate topology."
+  ${STORM_BASE}/bin/storm activate ${TOPOLOGY_NAME}
+  exit 1
+fi
+
+echo "${TOPOLOGY_NAME} stopped. Kill ${TOPOLOGY_NAME}."
+
+# Kill topology 
+${STORM_BASE}/bin/storm kill ${TOPOLOGY_NAME} -w 1
+KILL_RESULT=$?
+
+if [ ${KILL_RESULT} -ne 0 ] ;  then
+  echo "Topology ${TOPOLOGY_NAME} kill failed."
+  exit 1
+fi
+
+EXIST_CHECK_RESULT=`${STORM_BASE}/bin/storm list | awk '/^Topology_name/,0' | grep "${TOPOLOGY_NAME} "`
+for (( LOOP_INDEX=0; LOOP_INDEX<${MAX_LOOP}; LOOP_INDEX++ ))
+do
+  if [ "${EXIST_CHECK_RESULT}" = "" ] ; then
+    break
+  fi
+  
+  sleep 1
+  EXIST_CHECK_RESULT=`${STORM_BASE}/bin/storm list | awk '/^Topology_name/,0' | grep "${TOPOLOGY_NAME} "`
+done
+
+# Start topology
+${STORM_BASE}/bin/storm jar ${JAR_PATH} ${TOPOLOGY_CLASS} ${CONFIG_PATH} false

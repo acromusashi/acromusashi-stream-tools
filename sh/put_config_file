@@ -1,0 +1,57 @@
+#!/bin/bash
+#--------------------------------------------------------------------------
+# Abstract：
+#   Put config file to supervisor's hosts command.
+#   Procedure flow is following.
+#   1) Get supervisors from nimbus.
+#   2) Put config file to supervisor's hosts.
+#
+# Usage：
+#   put_config_file <SrcPath> <DstPath> <Password> 
+#--------------------------------------------------------------------------
+
+#-----------
+# Initialize Variable
+#-----------
+USAGE_MESSAGE='put_config_file <SrcPath> <DstPath> <Password>'
+
+SCRIPT_PATH=`readlink -f $0`
+SCRIPT_BINDIR=`dirname $SCRIPT_PATH`
+SCRIPT_BASE=`dirname $SCRIPT_BINDIR`
+
+SCRIPT_LIBPATH=${SCRIPT_BASE}/lib
+
+# ClassPath
+export SCRIPT_CLASSPATH=\
+${SCRIPT_BASE}/*:\
+${SCRIPT_BASE}/conf:\
+${SCRIPT_LIBPATH}/*\
+
+#-----------
+# Function define
+#-----------
+#+ ----------------------------------------------------
+#+  Arg num check
+#+ ----------------------------------------------------
+function checkArgNum {
+  if [ $# -ne 3 ]
+  then
+    echo -e "${USAGE_MESSAGE}"
+    exit 1
+  fi
+}
+
+#-----------
+# Main 
+#-----------
+checkArgNum $@
+
+SRC_PATH=$1
+DST_PATH=$2
+USER=`id -u -n`
+PASSWORD=$3
+SSH_PORT=22
+
+# Execute Config put tool
+java -classpath ${SCRIPT_CLASSPATH} acromusashi.stream.tools.ConfigPutTool -s ${SRC_PATH} -d ${DST_PATH} -ua ${USER} -up ${PASSWORD} -sp ${SSH_PORT}
+
