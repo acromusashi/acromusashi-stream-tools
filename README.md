@@ -10,7 +10,7 @@ Utility tools for AcroMUSASHI Stream.
 1.Download zip archive.  
   https://github.com/acromusashi/acromusashi-stream-tools/wiki/Download
 
-2.Download GroovyServ archive.
+2.Download GroovyServ archive.  
   http://kobo.github.io/groovyserv/download.html  
   groovyserv-1.0.0-bin.zip
   
