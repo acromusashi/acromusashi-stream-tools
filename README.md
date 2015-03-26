@@ -8,7 +8,7 @@ Utility tools for AcroMUSASHI Stream.
 ## Installing acromusashi-stream-tools package
 
 1.Download zip archive.  
-  https://github.com/acromusashi/storm-installer/wiki/Download
+  https://github.com/acromusashi/acromusashi-stream-tools/wiki/Download
 
 2.Download GroovyServ archive.
   http://kobo.github.io/groovyserv/download.html  
