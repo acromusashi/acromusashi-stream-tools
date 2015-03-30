@@ -44,6 +44,7 @@ $ sudo mv /opt/acromusashi-stream-tools/groovy-script /opt/storm/bin/
 ```
 $ cd /opt/acromusashi-tools/bin
 $ sudo ./restart_topology [Topology Library Path] [Topology Main class] [updated topology config]
+
 example)
 $ cd /opt/acromusashi-tools/bin
 $ sudo ./restart_topology /opt/storm/example-stream.jar acroquest.stream.ExampleTopology /opt/storm/conf/UpdatedConfig.yaml
